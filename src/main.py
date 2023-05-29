@@ -66,35 +66,30 @@ def pep(session):
 
 
 def whats_new(session):
-    # Вместо константы WHATS_NEW_URL, используйте переменную whats_new_url.
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     response = get_response(session, whats_new_url)
     if response is None:
-        # Если основная страница не загрузится, программа закончит работу.
         return
     soup = BeautifulSoup(response.text, features='lxml')
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
     div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
     sections_by_python = div_with_ul.find_all('li', attrs={'class': 'toctree-l1'})
 
-    results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
+    results = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
     for section in tqdm(sections_by_python):
         version_a_tag = section.find('a')
         version_link = urljoin(whats_new_url, version_a_tag['href'])
         response = get_response(session, version_link)
         if response is None:
-            # Если страница не загрузится, программа перейдёт к следующей ссылке.
             continue
         soup = BeautifulSoup(response.text, 'lxml')
         h1 = find_tag(soup, 'h1')
         dl = find_tag(soup, 'dl')
         dl_text = dl.text.replace('\n', ' ')
-        # Добавьте в список ссылки и текст из тегов h1 и dl в виде кортежа.
         results.append(
             (version_link, h1.text, dl_text)
         )
 
-    # Печать списка с данными.
     return results
 
 
@@ -105,16 +100,10 @@ def latest_versions(session):
     soup = BeautifulSoup(response.text, 'lxml')
     sidebar = find_tag(soup, 'div', attrs={'class': 'sphinxsidebarwrapper'})
     ul_tags = sidebar.find_all('ul')
-    # Перебор в цикле всех найденных списков.
     for ul in ul_tags:
-        # Проверка, есть ли искомый текст в содержимом тега.
         if 'All versions' in ul.text:
-            # Если текст найден, ищутся все теги <a> в этом списке.
             a_tags = ul.find_all('a')
-            # Остановка перебора списков.
             break
-    # Если нужный список не нашёлся,
-    # вызывается исключение и выполнение программы прерывается.
     else:
         raise Exception('Ничего не нашлось')
     results = [('Ссылка на документацию', 'Версия', 'Статус')]
@@ -135,7 +124,6 @@ def latest_versions(session):
 
 
 def download(session):
-    # Вместо константы DOWNLOADS_URL, используйте переменную downloads_url.
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
     response = get_response(session, downloads_url)
     if response is None:
@@ -148,15 +136,12 @@ def download(session):
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
 
-    # print(archive_url)
-
     downloads_dir = BASE_DIR / 'downloads'
     downloads_dir.mkdir(exist_ok=True)
     archive_path = downloads_dir / filename
 
     response = session.get(archive_url)
     with open(archive_path, 'wb') as file:
-        # Полученный ответ записывается в файл.
         file.write(response.content)
     logging.info(f'Архив был загружен и сохранён: {archive_path}')
 
@@ -171,24 +156,18 @@ MODE_TO_FUNCTION = {
 
 def main():
     configure_logging()
-    # Отмечаем в логах момент запуска программы.
     logging.info('Парсер запущен!')
     arg_parser = configure_argument_parser(MODE_TO_FUNCTION.keys())
     args = arg_parser.parse_args()
     logging.info(f'Аргументы командной строки: {args}')
 
-    # Создание кеширующей сессии.
     session = requests_cache.CachedSession()
-    # Если был передан ключ '--clear-cache', то args.clear_cache == True.
     if args.clear_cache:
-        # Очистка кеша.
         session.cache.clear()
 
     parser_mode = args.mode
-    # С вызовом функции передаётся и сессия.
     results = MODE_TO_FUNCTION[parser_mode](session)
     if results is not None:
-        # передаём их в функцию вывода вместе с аргументами командной строки.
         control_output(results, args)
     logging.info('Парсер завершил работу.')
 

@@ -1,11 +1,9 @@
 import argparse
 from constants import BASE_DIR
 import logging
-# хендлер с ротацией логов.
 from logging.handlers import RotatingFileHandler
 
 LOG_FORMAT = '"%(asctime)s - [%(levelname)s] - %(message)s"'
-# Указываем формат времени.
 DT_FORMAT = '%d.%m.%Y %H:%M:%S'
 
 
@@ -30,8 +28,8 @@ def configure_argument_parser(available_modes):
     )
     return parser
 
+
 def configure_logging():
-    # Сформируйте путь до директории logs.
     log_dir = BASE_DIR / 'logs'
     log_dir.mkdir(exist_ok=True)
     log_file = log_dir / 'parser.log'
@@ -41,8 +39,6 @@ def configure_logging():
     logging.basicConfig(
         datefmt=DT_FORMAT,
         format=LOG_FORMAT,
-        # Уровень записи логов.
         level=logging.INFO,
-        # Вывод логов в терминал.
         handlers=(rotating_handler, logging.StreamHandler())
     )
