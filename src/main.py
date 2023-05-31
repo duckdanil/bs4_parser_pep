@@ -1,5 +1,6 @@
 import re
 import logging
+from collections import defaultdict
 from urllib.parse import urljoin
 
 import requests_cache
@@ -18,50 +19,51 @@ def pep(session):
         return None
 
     soup = BeautifulSoup(response.text, 'lxml')
-
     section_tag = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
     tbody_tag = find_tag(section_tag, 'tbody')
     tr_tags = tbody_tag.find_all('tr')
 
-    status_sum = {}
-    total_peps = 0
-
+    status_sum = defaultdict(int)
     results = [('Статус', 'Количество')]
 
     for tr_tag in tr_tags:
         td_tag = find_tag(tr_tag, 'td')
         preview_status = td_tag.text[1:]
+
         a_tag = find_tag(tr_tag, 'a')
-        href = a_tag['href']
+        href = a_tag['href'].rstrip('/') + '/'
 
         link = urljoin(PEP_URL, href)
         response = get_response(session, link)
+
         if response is None:
             return None
 
         soup = BeautifulSoup(response.text, 'lxml')
-
         dt_tags = soup.find_all('dt')
 
         for dt_tag in dt_tags:
             if dt_tag.text == 'Status:':
-                total_peps += 1
                 status = dt_tag.find_next_sibling().string
-                if status in status_sum:
-                    status_sum[status] += 1
-                if status not in status_sum:
-                    status_sum[status] = 1
+
+                status_sum[status] += 1
+
                 if status not in EXPECTED_STATUS[preview_status]:
                     error_msg = (
                         'Несовпадающие статусы:\n'
                         f'{link}\n'
-                        f'Статус в картрочке {status}\n'
+                        f'Статус в карточке: {status}\n'
                         f'Ожидаемые статусы: {EXPECTED_STATUS[preview_status]}'
                     )
                     logging.warning(error_msg)
+
+    total_peps = sum(status_sum.values())
+
     for status in status_sum:
         results.append((status, status_sum[status]))
+
     results.append(('Total', total_peps))
+
     return results
 
 

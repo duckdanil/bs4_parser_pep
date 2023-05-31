@@ -1,6 +1,7 @@
 import csv
 import datetime as dt
 import logging
+import os
 
 from prettytable import PrettyTable
 
@@ -14,7 +15,7 @@ def file_output(results, cli_args):
     now = dt.datetime.now()
     now_formatted = now.strftime(DATETIME_FORMAT)
     file_name = f'{parser_mode}_{now_formatted}.csv'
-    file_path = results_dir / file_name
+    file_path = os.path.join(results_dir, file_name)
     with open(file_path, 'w', encoding='utf-8') as f:
         writer = csv.writer(f, dialect='unix')
         writer.writerows(results)
